@@ -29,8 +29,7 @@ end
 %% Variables init
 paths = {fullfile(root,'RBD'), fullfile(root,'BIO'), fullfile(root,'CON (Control)')};
 prefixes = {'RBD*', 'BIO-PD*', 'CON*'};
-% types = {'L1','L2','LS','LC','P1','P2','PS','PC'}; % Options
-types = {'L1','L2','P1','P2'}; % SELECT MANUALLY!!!
+types = {'L1','L2','LS','LC','P1','P2','PS','PC'};
 
 Nsets = length(paths);
 Ntypes = length(types);

@@ -2,6 +2,13 @@
 %{
  Author: Petr Krýže
  Email: petr.kryze@gmail.com
+    Performs statistical analysis in the means of ranksum test on tapping
+    test data from RBD affected patients and a control group. It takes all 
+    left hand measurements, calculates various parameters and then averages
+    them. Same procedure is applied to right hand measurements. Output of
+    the property extraction is then larger and smaller value of this pair
+    of averaged measurements, representing, in a sense, more and less
+    affected part of the patient's body.
 %}
 
 %% Init and prep
@@ -9,11 +16,17 @@ clc
 clear
 close all
 
-TimeCut = 22;
+% Settings
+overwritechk = 0; % Set to 1 to enable file overwrite prompt
+TimeCut = 23; % Crop value for maximum record time
 root = 'C:\Users\Petr\Disk Google\Thesis\Matlab\Results';
+%testType = TestType.Normal;
+%testType = TestType.Shaking; % Type of measurement to test
+testType = TestType.Counting;
+
 datasets = getDataObjects();
 
-props = properties(DataProperties);
+props = properties('DataProperties');
 Nprops = length(props);
 proplabels = cell(1,Nprops*2);
 for p = 1:Nprops
@@ -25,6 +38,7 @@ data = [];
 groups = {};
 
 %% Property extraction
+fprintf('Extracting properties...\n')
 Nsets = length(datasets);
 for i = 1:Nsets
     Nentries = length(datasets(i).entries);
@@ -37,8 +51,8 @@ for i = 1:Nsets
         meas = datasets(i).entries(j).measurements;
         
         % Structs with measurement data
-        Lmeas = meas(startsWith({meas.type},'L'));
-        Rmeas = meas(startsWith({meas.type},'P'));
+        Lmeas = meas(startsWith({meas.type},testType.getTypeLabels('left')));
+        Rmeas = meas(startsWith({meas.type},testType.getTypeLabels('right')));
         
         row = zeros(1,Nprops*2);
         for k = 1:Nprops
@@ -59,7 +73,7 @@ for i = 1:Nsets
     data = [data; rows];
     groups = [groups; rowlabels];
 end
-
+fprintf('Done!\n')
 
 %% Evaluation
 fprintf('Analyzing the datasets...\n')
@@ -81,9 +95,21 @@ for n = 1:Nprops*2 % Loop through all calculated properties
         if (exist(fullfile(root, foldername),'dir') ~= 7)
             mkdir(fullfile(root, foldername));
         end
-        filename = sprintf('%s.mat', prop);
-        fprintf('SUCCESS: %s | Saving to %s ...\n', prop, foldername)
-        save(fullfile(root,foldername,filename), 'rbdData', 'conData','stats','pval','groups');
+        filename = sprintf('%s_%s.mat', prop, char(testType));
+        filepath = fullfile(root,foldername,filename);
+        ch = 1;
+        if (exist(filepath,'file') ~= 0 && overwritechk == 1)
+            if overwriteDialog(filename)
+                ch = 1;
+            else
+                ch = 0;
+            end
+        end
+        
+        if ch
+            fprintf('SUCCESS: %s_%s | Saving to %s ...\n', prop, char(testType), foldername)
+            save(filepath, 'rbdData', 'conData','stats','pval','groups');
+        end
     end
     
     %% Kruskalwallis test
@@ -106,11 +132,8 @@ fprintf('Done!\n')
 function m = getPropertyMean(struct,propname,cut)
 val = NaN(length(struct),1);
 for k = 1:length(struct)
-    struct(k).properties.SampleCut = cut;
+    struct(k).properties.TimeCut = cut;
     val(k) = struct(k).properties.(propname);
 end
 m = mean(val,'omitnan');
 end
-
-
-
