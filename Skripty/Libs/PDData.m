@@ -281,7 +281,23 @@ classdef PDData < hgsetget
                 frame = DataDist(maxs(i,1):maxs(i+1,1));
                 
                 [minv, minix] = min(frame);
-                mins(i,:) = [maxs(i,1) + minix, minv];
+                
+                % Minima centering
+                j = 0;
+                while(abs(frame(minix - j) - minv) <= abs(maxs(i,2) - minv)*0.01)
+                    j = j+1;
+                end
+                k = 0;
+                while(abs(frame(minix + k) - minv) <= abs(maxs(i+1,2) - minv)*0.01)
+                    k = k+1;
+                end               
+                minix2 = (minix - j) + floor((j+k)/2);
+                
+                if abs(minix2-minix) <= 1
+                    mins(i,:) = [maxs(i,1) + minix - 1, minv];
+                else
+                    mins(i,:) = [maxs(i,1) + minix2 - 1, frame(minix2)];
+                end
             end
             
             % Add first extreme
@@ -338,7 +354,7 @@ classdef PDData < hgsetget
                 %[mins, maxs] = obj.ComputeExtremasOld(obj.DataDist,30,1.5);
                 [mins, maxs] = obj.ComputeExtremas(obj.DataDist);                
                 obj.MinV = mins;
-                obj.MaxV = maxs;                
+                obj.MaxV = maxs;   
                 %% Plotting for debugging
                 %{
                 close all

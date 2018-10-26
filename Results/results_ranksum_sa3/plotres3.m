@@ -26,5 +26,5 @@ grid on
 title('Statistical Analysis 3 result')
 xlabel('Property values')
 ylabel('Sample counts [-]')
-
+legend('RBD','RBD','CON','CON')
 end

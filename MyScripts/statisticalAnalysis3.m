@@ -22,7 +22,7 @@ TimeCut = 23; % Crop value for maximum record time
 root = 'C:\Users\Petr\Disk Google\Thesis\Matlab\Results';
 %testType = TestType.Normal;
 %testType = TestType.Shaking; % Type of measurement to test
-testType = TestType.Counting;
+testType = TestType.Normal;
 
 datasets = getDataObjects();
 
@@ -89,7 +89,7 @@ for n = 1:Nprops*2 % Loop through all calculated properties
     %% Ranksum test
     [pval,h,stats] = ranksum(rbdData,conData);
     
-    if h
+    if h % Null hypothesis rejected
         prop = proplabels{n};
         foldername = 'results_ranksum_sa3';
         if (exist(fullfile(root, foldername),'dir') ~= 7)
@@ -108,24 +108,33 @@ for n = 1:Nprops*2 % Loop through all calculated properties
         
         if ch
             fprintf('SUCCESS: %s_%s | Saving to %s ...\n', prop, char(testType), foldername)
-            save(filepath, 'rbdData', 'conData','stats','pval','groups');
+            save(filepath, 'rbdData', 'conData', 'data','stats','pval','groups');
+        end
+        
+        %% Kruskalwallis test
+        [pval,table,stats] = kruskalwallis(data(:,n),groups,'off');
+        [c,m,h,nms] = multcompare(stats,'ctype','lsd','alpha',0.05);
+        
+        if pval < 0.05
+            if (exist(fullfile(root, 'results'),'dir') ~= 7)
+                mkdir(fullfile(root, 'results'));
+            end
+            subfolder = 'kruskalwallis';
+            if (exist(fullfile(root, foldername, subfolder),'dir') ~= 7)
+                mkdir(fullfile(root, foldername, subfolder));
+            end
+            
+            filename = sprintf('KW_%s_%s.mat', prop, char(testType));            
+            filepath = fullfile(root,foldername,subfolder,filename);            
+            figname = sprintf('KW_%s_%s.fig', prop, char(testType));
+            figpath = fullfile(root,foldername,subfolder,figname);
+            
+            save(filepath, 'data','pval','table','stats','c','m','nms');
+            savefig(h,figpath,'compact');
+            close(h);
         end
     end
     
-    %% Kruskalwallis test
-%     [pval,table,stats] = kruskalwallis(data(:,n),groups,'off');
-%     [c,m,h,nms] = multcompare(stats,'ctype','lsd','alpha',0.05);
-%     
-%     if pval < 0.05
-%         if (exist(fullfile(root, 'results'),'dir') ~= 7)
-%             mkdir(fullfile(root, 'results'));
-%         end
-%         filename = fullfile(root, 'results', sprintf('%s_.mat', proplabels{n}));
-%         figname = fullfile(root, 'results', sprintf('%s_.fig', proplabels{n}));
-%         save(filename, 'data','pval','table','stats','c','m','nms');
-%         savefig(h,figname,'compact');
-%         close(h);
-%     end
 end
 fprintf('Done!\n')
 
